@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cursus — Latin revision drills for the Oxford Latin Course</title>
+  <script>document.documentElement.dataset.theme = (function () { try { return localStorage.getItem('cursus-theme') || 'light'; } catch (e) { return 'light'; } })();</script>
+  <meta name="description" content="Quick-fire form drills, full tables, parsing, vocabulary and unseen translation practice, keyed to Oxford Latin Course chapters 1–54.">
+  <meta name="google" content="notranslate">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b3402e'/%3E%3Cg transform='rotate(-8 16 16)'%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='18' font-weight='bold' text-anchor='middle' fill='white'%3ECL%3C/text%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=13">
+</head>
+<body>
+
+  <!-- ══════════ AUTH GATE ══════════ -->
+  <div id="auth-gate" class="gategate hidden">
+    <div class="auth-card">
+      <div class="brand auth-brand">
+        <span class="spqr">CL</span>
+        <div><h1>Cursus</h1><p class="tagline"><em class="latin">rēpete rūpem, adest via</em></p></div>
+      </div>
+      <div class="auth-tabs row gap">
+        <button id="auth-mode-in" class="chip active">Sign in</button>
+        <button id="auth-mode-up" class="chip">Create account</button>
+      </div>
+      <form id="auth-form" autocomplete="on">
+        <div id="auth-name-row" class="hidden">
+          <input id="auth-name" class="tin wide" placeholder="name (shown on your profile)" autocomplete="nickname">
+        </div>
+        <div id="auth-email-row">
+          <input id="auth-email" class="tin wide" placeholder="you@school.edu" type="email" autocomplete="email">
+        </div>
+        <div id="auth-pass-row">
+          <input id="auth-pass" class="tin wide" placeholder="password (6+ characters)" type="password" autocomplete="current-password">
+        </div>
+        <div class="row gap">
+          <button id="auth-go" class="btn primary grow">Sign in</button>
+        </div>
+        <p id="auth-error" class="feedback bad"></p>
+        <div id="auth-localhint" class="muted small">
+          No Firebase config yet — accounts are kept on this device only.<br>
+          <button type="button" id="auth-local" class="btn ghost small">Continue without an account →</button>
+        </div>
+      </form>
+      <p class="muted xpfoot">Progress pastes into your profile — stats, streak, vocabulary boxes, passages read.</p>
+    </div>
+  </div>
+
+  <!-- ══════════ APP SHELL ══════════ -->
+  <div id="app-shell" class="shell">
+    <aside class="side">
+      <div class="brand side-brand">
+        <span class="spqr">CL</span>
+        <div><h1 class="side-title">Cursus</h1><p class="tagline small">Latin for the long run</p></div>
+      </div>
+      <nav class="side-nav">
+        <button id="tab-dash"   class="tbtn">Dashboard</button>
+        <button id="tab-exam"   class="tbtn">Exam</button>
+        <button id="tab-drills"  class="tbtn">Quick-fire</button>
+        <button id="tab-tables"  class="tbtn">Full tables</button>
+        <button id="tab-parse"   class="tbtn">Parse</button>
+        <button id="tab-vocab"   class="tbtn">Vocabulary</button>
+        <button id="tab-unseen"  class="tbtn">Unseen</button>
+        <button id="tab-grammar" class="tbtn">Grammar</button>
+        <button id="tab-reader"  class="tbtn">Reader</button>
+      </nav>
+      <div class="side-user">
+        <span class="avatar" id="user-avatar">?</span>
+        <div class="grow">
+          <div id="user-name" class="small searname">…</div>
+          <button id="user-logout" class="linklike small muted">log out</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="column">
+      <header class="topbar" id="topbar">
+        <div id="hdr-title" class="hdr-heading">Dashboard</div>
+        <div class="hdr-right">
+          <span class="pill" id="hdr-stat-xp">0 XP</span>
+          <span class="pill" id="hdr-stat-streak">0-day streak</span>
+          <span class="pill" id="hdr-exam" title="Days until the Semester 2 exam"></span>
+          <button id="theme-btn" class="btn small" style="border-radius:999px" title="Switch theme">Dark</button>
+          <label class="muted small" for="hdr-ch"></label>
+          <select id="hdr-ch"></select>
+          <span class="muted small" id="hdr-ch-val"></span>
+          <span class="pill" id="hdr-stats">—</span>
+        </div>
+      </header>
+
+      <main>
+        <!-- DASHBOARD -->
+        <section id="panel-dash" class="panel hidden">
+          <div class="dash-hero">
+            <div class="ring-wrap">
+              <svg viewBox="0 0 120 120" class="ring">
+                <circle class="ring-bg" cx="60" cy="60" r="52"/>
+                <circle class="ring-fg" id="ring-acc" cx="60" cy="60" r="52"/>
+              </svg>
+              <div class="ring-label"><b id="dash-acc">—</b><span>accuracy</span></div>
+            </div>
+            <div class="dash-main">
+              <h2 id="dash-greeting">Good luck <span class="accent">tibi</span>!</h2>
+              <p class="muted" id="dash-sub" style="margin-top:-6px"></p>
+              <div class="dash-meters">
+                <div class="meter">
+                  <label>Level <b id="dash-level">1</b> · <span id="dash-xp">0</span> XP</label>
+                  <div class="bar"><div class="bar-fg" id="dash-levelbar" style="width:0%"></div></div>
+                  <span class="muted small" id="dash-tonext">0 XP to level 2</span>
+                </div>
+                <div class="meter">
+                  <label>Vocabulary mastered <b id="dash-cards">0</b> of <span id="dash-cards-total">0</span></label>
+                  <div class="bar"><div class="bar-fg" id="dash-vocabbar" style="width:0%"></div></div>
+                </div>
+                <div class="meter">
+                  <label>Unseens read <b id="dash-pass">0</b> of <span id="dash-pass-total">0</span></label>
+                  <div class="bar"><div class="bar-fg" id="dash-passbar" style="width:0%"></div></div>
+                </div>
+              </div>
+              <div class="row gap dash-actions">
+                <button class="btn primary" data-goto="drills">Drill forms</button>
+                <button class="btn ghost" data-goto="vocab" id="dash-vocab-btn">Flashcards</button>
+                <button class="btn ghost" data-goto="unseen">Translate an unseen</button>
+                <button class="btn ghost" data-goto="exam">Mock exam</button>
+              </div>
+            </div>
+            <div class="dash-flame">
+              <div class="flame-count" id="dash-streak">0</div>
+              <div class="muted small">day streak</div>
+            </div>
+          </div>
+          <div id="dash-history"></div>
+        </section>
+
+        <!-- EXAM -->
+        <section id="panel-exam" class="panel hidden">
+          <div id="exam-body"></div>
+        </section>
+
+        <!-- QUICK FIRE -->
+        <section id="panel-drills" class="panel hidden">
+          <div class="qbox">
+            <div class="row spread small muted">
+              <span id="q-count">1</span>
+              <span>type the form · Enter = check</span>
+            </div>
+            <p id="q-prompt" class="prompt latin"></p>
+            <div class="row gap">
+              <input id="q-answer" class="tin" autocomplete="off" spellcheck="false">
+              <button id="q-check" class="btn primary">Check</button>
+              <button id="q-next" class="btn ghost hidden">Next →</button>
+            </div>
+            <div id="q-feedback" class="feedback"></div>
+          </div>
+          <div id="q-hist"></div>
+        </section>
+
+        <!-- TABLES -->
+        <section id="panel-tables" class="panel hidden">
+          <div id="tables-pick"></div>
+          <div id="tables-grid"></div>
+        </section>
+
+        <!-- PARSE -->
+        <section id="panel-parse" class="panel hidden">
+          <div class="qbox">
+            <p class="muted small">choose the right description in every box</p>
+            <p id="parse-form" class="prompt latin big"></p>
+            <p id="parse-wordhint" class="muted small"></p>
+            <div id="parse-boxes" class="pgrid"></div>
+            <div class="row gap">
+              <button id="p-check" class="btn primary">Check</button>
+              <button id="p-next" class="btn ghost">Another form →</button>
+            </div>
+            <div id="parse-feedback" class="feedback"></div>
+          </div>
+        </section>
+
+        <!-- VOCAB -->
+        <section id="panel-vocab" class="panel hidden">
+          <div id="vocab-body"></div>
+        </section>
+
+        <!-- UNSEEN -->
+        <section id="panel-unseen" class="panel hidden">
+          <div id="unseen-pick"></div>
+          <div id="unseen-view"></div>
+          <div id="unseen-gloss" class="glosstip hidden"></div>
+        </section>
+
+        <!-- GRAMMAR -->
+        <section id="panel-grammar" class="panel hidden">
+          <div id="grammar-body"></div>
+        </section>
+
+        <!-- READER -->
+        <section id="panel-reader" class="panel hidden">
+          <p class="muted">Import each book once — it's then kept <strong>in this browser only</strong> and opens automatically on every visit. PDFs open in your browser's own viewer, text files get page-by-page reading. When the site runs from the folder on your machine, the books load from there directly. Nothing is ever uploaded.</p>
+          <div class="row gap">
+            <div><div id="load-part1"></div></div>
+            <div><div id="load-part2"></div></div>
+            <div><div id="load-part3"></div></div>
+          </div>
+          <div id="reader-current" class="reader"></div>
+        </section>
+      </main>
+
+      <footer>
+        <p class="muted small">Cursus — an independent study companion. Original drills, tables, passages and vocabulary compiled by the site; not affiliated with or endorsed by OUP. Your scanned files are read locally in the Reader tab and are never uploaded.</p>
+      </footer>
+    </div>
+  </div>
+
+  <div id="xp-toast" class="xp-toast hidden"></div>
+
+  <script src="js/grammar.js?v=13"></script>
+  <script src="js/words.js?v=13"></script>
+  <script src="js/chapters.js?v=13"></script>
+  <script src="js/passages.js?v=13"></script>
+  <script src="js/exam.js?v=13"></script>
+  <script src="js/firebase-config.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
+</body>
+</html>
