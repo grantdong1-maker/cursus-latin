@@ -338,8 +338,8 @@
         m: { sg: ['—', 'suī', 'sibi', 'sē', 'sē'], pl: ['—', 'suōrum', 'sibi', 'sē', 'sē'] }
       },
       is: {
-        m: { sg: ['is', 'eius', 'eī', 'eum', 'eō'], pl: ['eī', 'eōs', 'eōrum', 'eīs', 'eīs'] },
-        f: { sg: ['ea', 'eius', 'eī', 'eam', 'eā'], pl: ['eae', 'eās', 'eārum', 'eīs', 'eīs'] },
+        m: { sg: ['is', 'eius', 'eī', 'eum', 'eō'], pl: ['eī', 'eōrum', 'eīs', 'eōs', 'eīs'] },
+        f: { sg: ['ea', 'eius', 'eī', 'eam', 'eā'], pl: ['eae', 'eārum', 'eīs', 'eās', 'eīs'] },
         n: { sg: ['id', 'eius', 'eī', 'id', 'eō'], pl: ['ea', 'eōrum', 'eīs', 'ea', 'eīs'] }
       },
       quī: {
