@@ -25,7 +25,7 @@
     d2n:  { intro: 2, s: ['um', 'ī', 'ō', 'um', 'ō'], p: ['a', 'ōrum', 'īs', 'a', 'īs'] },
     d3c:  { intro: 5, s: [null, 'is', 'ī', 'em', 'e'], p: ['ēs', 'um', 'ibus', 'ēs', 'ibus'] },
     d3cn: { intro: 5, s: [null, 'is', 'ī', null, 'e'], p: ['a', 'um', 'ibus', 'a', 'ibus'] },
-    d3i:  { intro: 10, s: [null, 'is', 'ī', 'em', 'ī'], p: ['ēs', 'ium', 'ibus', 'ēs', 'ibus'] },
+    d3i:  { intro: 10, s: [null, 'is', 'ī', 'em', 'e'], p: ['ēs', 'ium', 'ibus', 'ēs', 'ibus'] },
     d3in: { intro: 12, s: [null, 'is', 'ī', null, 'e'], p: ['ia', 'ium', 'ibus', 'ia', 'ibus'] },
     d4:   { intro: 20, s: ['us', 'ūs', 'uī', 'um', 'ū'], p: ['ūs', 'uum', 'ibus', 'ūs', 'ūs'] },
     d5:   { intro: 23, s: ['ēs', 'eī', 'eī', 'em', 'ē'], p: ['ēs', 'ērum', 'ēbus', 'ēs', 'ēbus'] }

@@ -328,7 +328,7 @@
     var specs = [];
     if (w.type === 'n') {
       NUMS.forEach(function (n) { CASE_ORDER.forEach(function (c) {
-        specs.push({ cs: c, num: n, alt: (w.decl === 'd3i' && c === 'abl' && n === 'sg') ? [w.stem + 'e'] : undefined, label: G.NUM_LABEL[n].slice(0, 3).replace('sin', 'sing') + ' ' + G.CASE_LABEL[c] });
+        specs.push({ cs: c, num: n, alt: (w.decl === 'd3i' && c === 'abl' && n === 'sg') ? [w.stem + 'ī'] : undefined, label: G.NUM_LABEL[n].slice(0, 3).replace('sin', 'sing') + ' ' + G.CASE_LABEL[c] });
       }); });
     } else if (w.type === 'adj') {
       ['m', 'f', 'n'].forEach(function (g) {
