@@ -326,6 +326,12 @@
     return out;
   }
 
+    /* forms with a classical plural variant that schools don't drill — accepted, never shown */
+    var PRON_ALTS = {
+      'sē':  { 'gen|pl': ['suōrum', 'suārum'] },
+      'ego': { 'gen|pl': ['nostrī'] },
+      'tū':  { 'gen|pl': ['vestrī'] }
+    };
   function pronounForms(w) {
     var tabs = {
       ego: {
@@ -335,7 +341,7 @@
         m: { sg: ['tū', 'tuī', 'tibi', 'tē', 'tē'], pl: ['vōs', 'vestrum', 'vōbīs', 'vōs', 'vōbīs'] }
       },
       sē: {
-        m: { sg: ['—', 'suī', 'sibi', 'sē', 'sē'], pl: ['—', 'suōrum', 'sibi', 'sē', 'sē'] }
+        m: { sg: ['—', 'suī', 'sibi', 'sē', 'sē'], pl: ['—', 'suī', 'sibi', 'sē', 'sē'] }
       },
       is: {
         m: { sg: ['is', 'eius', 'eī', 'eum', 'eō'], pl: ['eī', 'eōrum', 'eīs', 'eōs', 'eīs'] },
@@ -369,6 +375,11 @@
           if (f && f !== '—') out.push({ form: f, kind: 'noun', meta: { cs: cs, num: num, g: g } });
         });
       });
+    });
+    var alts = PRON_ALTS[w.which];
+    if (alts) out.forEach(function (x) {
+      var k = x.meta.cs + '|' + x.meta.num;
+      if (alts[k]) x.meta.alt = alts[k];
     });
     return out;
   }

@@ -335,7 +335,7 @@
     } else if (w.type === 'p') {
       var list = G.pronounForms(w).filter(function (x) { return x.form !== '—'; });
       list.forEach(function (x) {
-        specs.push({ cs: x.meta.cs, num: x.meta.num, g: x.meta.g, label: x.meta.g + ' ' + (x.meta.num === 'sg' ? 'sg' : 'pl') + ' ' + G.CASE_LABEL[x.meta.cs] });
+        specs.push({ cs: x.meta.cs, num: x.meta.num, g: x.meta.g, alt: x.meta.alt, label: x.meta.g + ' ' + (x.meta.num === 'sg' ? 'sg' : 'pl') + ' ' + G.CASE_LABEL[x.meta.cs] });
       });
     } else if (w.type === 'v') {
       if (w.irr) {
@@ -568,7 +568,7 @@
       cells.forEach(function (c) {
         var want = G.formOf(w, c.spec) || '—';
         var got = normalizeSans(c.input.value) || '—';
-        var ok = got === normalizeSans(want);
+        var ok = got === normalizeSans(want) || (c.spec.alt || []).some(function (a) { return normalizeSans(a) === got; });
         c.input.classList.remove('wrong', 'right');
         c.input.classList.add(ok ? 'right' : 'wrong');
         if (ok) right++;
