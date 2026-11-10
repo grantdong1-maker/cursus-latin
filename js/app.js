@@ -860,30 +860,67 @@
     });
     host.appendChild(grid);
 
-    /* verb samples */
+    /* verb samples: complete paradigms — indicative act/pass, subjunctive act/pass, imperative */
     var verbhost = h('div', 'gtables verbs');
-    var conjSamples = [1, 2, 3, 33, 4].filter(function (cj) { return state.chapter >= (C.featureIntro['conj' + (cj === 33 ? 33 : cj)] || 1); });
+    var V_HEADS = ['pres', 'imp', 'fut', 'perf', 'plup', 'fp'];
+    var S_HEADS = ['pres', 'imp', 'perf', 'plup'];
+    var canSubj = state.chapter >= (C.featureIntro.subj || 33);
+    var canPass = state.chapter >= (C.featureIntro.analyticPass || 31);
     var sampleWords = W.verbs;
-    conjSamples.forEach(function (cj) {
-      var w = sampleWords.find(function (x) { return !x.irr && x.conj === cj; });
-      if (!w) return;
+    function vtable(w, heads, voice, mood) {
       var t = h('table', 'gtable');
       var top = h('tr', null, '');
-      ['', 'pres', 'imp', 'fut', 'perf', 'plup', 'fp'].forEach(function (hh) { top.appendChild(h('th', null, hh)); });
+      top.appendChild(h('th', null, ''));
+      heads.forEach(function (hh) { top.appendChild(h('th', null, hh)); });
       t.appendChild(top);
-      PERSONS.forEach(function (per) {
-        ['sg', 'pl'].forEach(function (n) {
-          if (per === 1 && n === 'pl') return;
+      ['sg', 'pl'].forEach(function (n) {
+        PERSONS.forEach(function (per) {
           var tr = h('tr', null, '');
-          tr.appendChild(h('td', null, (n === 'sg' ? 'sing ' : 'pl ') + per));
-          TENSES.forEach(function (tn) {
-            tr.appendChild(h('td', null, esc(tenseOk(tn) ? (G.verbForm(w, per, n, tn, 'act') || '—') : '—')));
+          tr.appendChild(h('td', null, (n === 'sg' ? 'sg ' : 'pl ') + per));
+          heads.forEach(function (tn) {
+            var f = mood
+              ? G.formOf(w, { mood: mood, person: per, num: n, tense: tn, voice: voice })
+              : (tenseOk(tn) ? G.verbForm(w, per, n, tn, voice) : null);
+            tr.appendChild(h('td', null, esc(f || '\u2014')));
           });
           t.appendChild(tr);
         });
       });
+      return t;
+    }
+    function addLabel(vcell, txt) { vcell.appendChild(h('span', 'glabel', esc(txt))); }
+    var conjSamples = [1, 2, 3, 33, 4].filter(function (cj) { return state.chapter >= (C.featureIntro['conj' + cj] || 1); });
+    conjSamples.forEach(function (cj) {
+      var w = sampleWords.find(function (x) { return !x.irr && x.conj === cj; });
+      if (!w) return;
       var vcell = h('div', 'gcell', '<b class="latin">' + esc(w.l) + '</b>');
-      vcell.appendChild(t);
+      addLabel(vcell, 'indicative active');
+      vcell.appendChild(vtable(w, V_HEADS, 'act'));
+      if (canPass && !w.passOmit) { addLabel(vcell, 'indicative passive'); vcell.appendChild(vtable(w, V_HEADS, 'pass')); }
+      if (canSubj) {
+        addLabel(vcell, 'subjunctive active');
+        vcell.appendChild(vtable(w, S_HEADS, 'act', 'subj'));
+        if (!w.passOmit) { addLabel(vcell, 'subjunctive passive'); vcell.appendChild(vtable(w, S_HEADS, 'pass', 'subj')); }
+      }
+      var impSg = G.formOf(w, { imperative: 'sg' }), impPl = G.formOf(w, { imperative: 'pl' });
+      if (impSg) {
+        addLabel(vcell, 'imperative');
+        var it = h('table', 'gtable');
+        it.appendChild(h('tr', null, '<td>sg</td><td>' + esc(impSg) + '</td>'));
+        it.appendChild(h('tr', null, '<td>pl</td><td>' + esc(impPl) + '</td>'));
+        vcell.appendChild(it);
+      }
+      verbhost.appendChild(vcell);
+    });
+    /* irregular verbs: sum / possum / eō — shapes no conjugation table owns */
+    sampleWords.filter(function (x) { return x.irr; }).forEach(function (w) {
+      var vcell = h('div', 'gcell', '<b class="latin">' + esc((w.p[3] === '—' ? w.p.slice(0, 3) : w.p).join(', ')) + '</b>');
+      addLabel(vcell, 'indicative active');
+      vcell.appendChild(vtable(w, V_HEADS, 'act'));
+      if (canSubj) {
+        addLabel(vcell, 'subjunctive active');
+        vcell.appendChild(vtable(w, S_HEADS, 'act', 'subj'));
+      }
       verbhost.appendChild(vcell);
     });
     host.appendChild(verbhost);

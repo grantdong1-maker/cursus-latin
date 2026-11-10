@@ -488,3 +488,5 @@ select, option { background: var(--panel2); color: var(--text); border: 1px soli
 .aids-list { margin: 0; padding: 0; columns: 2; column-gap: 28px; font-size: 13px; }
 .aids-list li { list-style: none; break-inside: avoid; padding: 2px 0; }
 .aids-list li { font-family: var(--serif); }
+.gtables.verbs .glabel { display: block; margin: 12px 0 4px; font-size: 12px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.gtables.verbs .glabel:first-child { margin-top: 6px; }
