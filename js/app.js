@@ -180,7 +180,7 @@
   }
 
   function normalizeSans(s) {
-    return G.normalize(String(s)).replace(/[!.,?;:'"()\[\]]/g, '').replace(/\s+/g, ' ').trim();
+    return G.normalize(String(s)).replace(/[!.,?;:'"()\[\]\u2014\u2013-]/g, '').replace(/\s+/g, '').trim();
   }
 
   function checkAnswer() {
@@ -783,7 +783,7 @@
     var fullEntry = (w.type === 'v' && w.p && !w.irr) ? w.p.join(', ') : w.l;
     if (state.vocabMode === 'le') {
       face = esc(w.l.split(',')[0]);
-      answer = esc(w.meaning) + (w.type === 'v' ? ' <span class="muted">(' + esc(w.l) + ')</span>' : '');
+      answer = esc(fullEntry) + ' \u2014 ' + esc(w.meaning);
     } else {
       face = esc(w.meaning) + ' <span class="muted">(' + esc(w.l.split(',')[0]) + ')</span>';
       answer = esc(fullEntry) + (w.type === 'v' ? ' <span class="muted">raw conj ' + w.conj + '</span>' : '');
@@ -791,7 +791,7 @@
     var box = h('div', 'bigcard');
     box.appendChild(h('div', 'vocab-face', face));
     var inp = h('input', 'tin wide');
-    inp.placeholder = state.vocabMode === 'el' ? 'type the full dictionary entry (Enter = check)' : 'type the answer (Enter = check)';
+    inp.placeholder = state.vocabMode === 'el' ? 'type the full dictionary entry (Enter = check)' : 'type the full entry and meaning (Enter = check)';
     inp.autocomplete = 'off';
     inp.spellcheck = false;
     box.appendChild(inp);
@@ -808,16 +808,53 @@
     rbtns.appendChild(skip); rbtns.appendChild(editor);
     row.appendChild(lbtns); row.appendChild(rbtns);
     box.appendChild(row);
-    function glossOk(given) {
-      /* Latin→English: accept any gloss, lenient on parentheses & word order fragments */
+    /* Latin→English: the full entry AND the meaning must both be typed —
+       "paro parare paravi paratum to prepare", "puella -ae f girl".
+       Macron- and punctuation-blind. Entry must appear contiguously (any word
+       order for the meaning). Gloss words already present in the entry
+       (pars → "part", acceptum → "accept") can't double as the meaning;
+       true cognates (toga, senator) count from the entry itself. */
+    function leOk(given) {
       var v = normalizeSans(String(given).trim());
       if (!v) return false;
-      var parts = String(w.meaning || '').split(/[,;]/);
-      for (var i = 0; i < parts.length; i++) {
-        var g = normalizeSans(parts[i].replace(/\(.*?\)/g, '').trim());
-        if (!g) continue;
-        if (g === v) return true;
-        if (v.length >= 3 && (g.indexOf(v) === 0 || v.indexOf(g) === 0)) return true;
+      var entryN = normalizeSans(fullEntry);
+      if (entryN && v.indexOf(entryN) < 0) return false;
+      /* glosses are checked against the text OUTSIDE the entry */
+      var rest = entryN ? v.split(entryN).join(' ') : v;
+      var rawWords = String(given).split(/[^A-Za-z\u0100-\u017f]+/);
+      function normTok(s) {
+        var t = G.normalize(String(s)).replace(/[^a-z0-9]/g, '');
+        return /^(be|am|is|are|was|were|been|being)$/.test(t) ? 'be' : t;
+      }
+      var entryWords = G.normalize(String(fullEntry)).split(/[^a-z0-9]+/)
+        .map(normTok).filter(function (x) { return x && x !== 'be'; });
+      function wordHit(g) {
+        if (g.length >= 4 && rest.indexOf(g) >= 0) return true;
+        if (entryWords.indexOf(g) >= 0) return true;
+        for (var j = 0; j < rawWords.length; j++) {
+          var t = normTok(rawWords[j]);
+          if (!t) continue;
+          if (entryWords.indexOf(t) >= 0) continue;
+          if (t === g) return true;
+          if (g.length >= 4 && t.indexOf(g) === 0) return true;
+        }
+        return false;
+      }
+      var segs = String(w.meaning || '').split(/[,;]/);
+      for (var i = 0; i < segs.length; i++) {
+        var seg = segs[i].replace(/\(.*?\)/g, '').trim().replace(/^to /, '');
+        var req = [], opt = [];
+        seg.split(/[^A-Za-z\u0100-\u017f]+/).forEach(function (s) {
+          var t = normTok(s);
+          if (!t) return;
+          if (t === 'be') { opt.push(t); } else { req.push(t); }
+        });
+        if (!req.length && !opt.length) continue;
+        /* bare copula gloss ("esse" → "be"): the optional word becomes required */
+        if (!req.length) { req = opt; }
+        var all = true;
+        for (var k = 0; k < req.length; k++) { if (!wordHit(req[k])) { all = false; break; } }
+        if (all) return true;
       }
       return false;
     }
@@ -826,7 +863,7 @@
       st.seen++;
       var ok;
       if (state.vocabMode === 'le') {
-        ok = glossOk(inp.value);
+        ok = leOk(inp.value);
       } else {
         /* English→Latin: the whole dictionary entry must be typed — nom, gen, gender;
            verbs: all four principal parts. Macron- and punctuation-blind. */
