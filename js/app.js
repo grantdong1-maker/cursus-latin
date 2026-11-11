@@ -718,7 +718,18 @@
   }
 
   /* ---------- VOCAB (SRS) ---------- */
-  function vocabDeck() { return W.all.filter(function (w) { return chapterGate(w) && w.meaning; }); }
+  function vocabDeck() {
+    return W.all.filter(function (w) {
+      return chapterGate(w) && w.meaning && (!state.vocabCh || w.c === state.vocabCh);
+    });
+  }
+  function vocabChapters() {
+    var seen = {}, out = [];
+    W.all.filter(function (w) { return chapterGate(w) && w.meaning; }).forEach(function (w) {
+      if (!seen[w.c]) { seen[w.c] = 1; out.push(w.c); }
+    });
+    return out.sort(function (a, b) { return a - b; });
+  }
   function vsKey(id) { return 'cursus_v_' + id; }
   function vsState(w) {
     var raw = store.getItem(vsKey(w.l));
@@ -743,10 +754,28 @@
     host.innerHTML = '';
     var card = currentCard();
     var meta = h('div', 'row gap spread');
-    var dc = h('span', 'muted', dueCount() + ' cards not yet mastered at your chapter');
+    var dc = h('span', 'muted', dueCount() + ' cards not yet mastered' + (state.vocabCh ? ' (ch ' + state.vocabCh + ')' : ' at your chapter'));
+    var right = h('div', 'row gap');
+    var chSel = h('select', null);
+    chSel.setAttribute('aria-label', 'filter deck by chapter');
+    chSel.appendChild(h('option', null, 'all chapters'));
+    chSel.firstChild.value = '';
+    vocabChapters().forEach(function (c) {
+      var o = h('option', null, 'ch ' + c);
+      o.value = c;
+      chSel.appendChild(o);
+    });
+    chSel.value = state.vocabCh ? String(state.vocabCh) : '';
+    chSel.onchange = function () {
+      state.vocabCh = chSel.value ? Number(chSel.value) : null;
+      save();
+      renderVocab();
+    };
+    right.appendChild(chSel);
     var modeBtn = h('button', 'btn ghost', state.vocabMode === 'le' ? 'Latin → English' : 'English → Latin');
     modeBtn.onclick = function () { state.vocabMode = state.vocabMode === 'le' ? 'el' : 'le'; save(); renderVocab(); };
-    meta.appendChild(dc); meta.appendChild(modeBtn);
+    right.appendChild(modeBtn);
+    meta.appendChild(dc); meta.appendChild(right);
     host.appendChild(meta);
     if (!card) { host.appendChild(h('div', 'bigcard', 'All mastered for this chapter')); host.appendChild(h('p', 'muted', 'Raise your chapter level or reset progress to keep going.')); return; }
     var w = card.w;
@@ -796,7 +825,10 @@
       st.seen++;
       var ok = state.vocabMode === 'le'
         ? glossOk(inp.value)
-        : normalizeSans(inp.value).indexOf(normalizeSans(w.l.split(',')[0])) === 0;
+        : String(w.l).split(/[,\/]/).some(function (seg) {
+            var nn = normalizeSans(seg.trim());
+            return nn && normalizeSans(inp.value).indexOf(nn) === 0;
+          });
       st.right += ok ? 1 : 0;
       var now = Date.now();
       var intervals = [0, 1000 * 3600 * 12, 1000 * 3600 * 24 * 3, 1000 * 3600 * 24 * 7, 1000 * 3600 * 24 * 16, 0];
@@ -824,6 +856,21 @@
       .forEach(function (x) { lst.appendChild(h('li', null, '<b>box ' + (x[0] + 1) + '</b> — ' + x[1])); });
     recent.appendChild(lst);
     host.appendChild(recent);
+    /* words grouped by their chapter tag */
+    var browse = h('details', null);
+    browse.appendChild(h('summary', null, 'words by chapter'));
+    var bwrap = h('div', 'chlist');
+    vocabChapters().forEach(function (c) {
+      var row = h('div', 'chgroup');
+      row.appendChild(h('b', 'chtag', 'ch ' + c));
+      var words = W.all.filter(function (x) { return x.c === c && x.meaning; });
+      row.appendChild(h('span', 'chwords', words.map(function (x) {
+        return esc(x.l.split(',')[0]) + ' \u2014 ' + esc(x.meaning);
+      }).join(' \u00b7 ')));
+      bwrap.appendChild(row);
+    });
+    browse.appendChild(bwrap);
+    host.appendChild(browse);
   }
 
   /* ---------- GRAMMAR REFERENCE ---------- */

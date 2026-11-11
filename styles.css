@@ -490,3 +490,8 @@ select, option { background: var(--panel2); color: var(--text); border: 1px soli
 .aids-list li { font-family: var(--serif); }
 .gtables.verbs .glabel { display: block; margin: 12px 0 4px; font-size: 12px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .gtables.verbs .glabel:first-child { margin-top: 6px; }
+.chlist { margin: 10px 0 20px; }
+.chgroup { display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.chgroup:last-child { border-bottom: 0; }
+.chtag { min-width: 52px; color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.chwords { font-size: 14px; line-height: 1.55; }

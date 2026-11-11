@@ -122,7 +122,7 @@
     if (w.conj === 2) pres = pres.replace(/[e]$/, '');
     if (w.conj === 33 || w.conj === 4) pres = pres.replace(/[i]$/, ''); /* capiō, audiō keep theme i in endings */
     var perfS = w.p[2].replace(/[ī]$/, '');
-    var supS = w.p[3].replace(/um$/, '');
+    var supS = (w.p[3] && w.p[3] !== '\u2014') ? w.p[3].replace(/um$/, '') : null;
     return { pres: pres, perfS: perfS, supS: supS };
   }
 
@@ -130,13 +130,17 @@
     var key = cs + ':' + num + (g ? ':' + g : '');
     if (w.forms && w.forms[key]) return w.forms[key];
     if (w.frc && w.frc[key]) return w.frc[key];
+    if (w.decl === 'adj3' && cs === 'abl' && num === 'sg') return w.stem + '\u012b'; /* adjectival ablative is -\u012b, never the noun -e */
     var decl;
     if (w.decl === 'adj12') decl = (g === 'm' ? DECL.d2m : (g === 'f' ? DECL.d1 : DECL.d2n));
-    else if (w.decl === 'adj3') decl = (num === 'sg' && g === 'n') ? DECL.d3in : DECL.d3i;
+    else if (w.decl === 'adj3') decl = g === 'n' ? DECL.d3in : DECL.d3i;
     else decl = DECL[w.decl];
     if (!decl) return null;
     var end = decl[num === 'sg' ? 's' : 'p'][CASES.indexOf(cs)];
-    if (end === null) return w.nom || w.stem;
+    if (end === null) {
+      if (w.decl === 'adj3' && !w.nom) return w.stem + (g === 'n' ? 'e' : 'is');
+      return w.nom || w.stem;
+    }
     return w.stem + end;
   }
 
@@ -184,6 +188,7 @@
     /* analytic perfect passive: PPP + sum */
     var aux = tense === 'perf' ? 'pres' : tense === 'plup' ? 'imp' : tense === 'fp' ? 'fut' : null;
     if (!aux) return null;
+    if (!s.supS) return null;
     var g = w.pppG || 'm';
     var ppp = nominalForm({ decl: 'adj12', stem: s.supS }, 'nom', num, g);
     return ppp + ' ' + sumForm(aux, i);
@@ -231,6 +236,7 @@
     if (tense === 'perf' && voice === 'act') return s.perfS + SUBJ_PERF[i];
     if (tense === 'plup' && voice === 'act') return s.perfS + SUBJ_PLUP[i];
     if ((tense === 'perf' || tense === 'plup') && voice === 'pass') {
+      if (!s.supS) return null;
       var ppp = nominalForm({ decl: 'adj12', stem: s.supS }, 'nom', num, w.pppG || 'm');
       return ppp + ' ' + (tense === 'perf' ? SIM[i] : ESSEM[i]);
     }
@@ -244,8 +250,8 @@
       var st = s.pres + (w.conj === 1 ? 'ānt' : (w.conj === 33 || w.conj === 4) ? 'iēnt' : 'ēnt');
       return st.slice(0, -1) + 's'; /* amānt → amāns */
     }
-    if (tense === 'perf' && voice === 'pass') return nominalForm({ decl: 'adj12', stem: s.supS }, 'nom', 'sg', 'm');
-    if (tense === 'fut' && voice === 'act') return nominalForm({ decl: 'adj12', stem: s.supS + 'ūr' }, 'nom', 'sg', 'm');
+    if (tense === 'perf' && voice === 'pass') return s.supS ? nominalForm({ decl: 'adj12', stem: s.supS }, 'nom', 'sg', 'm') : null;
+    if (tense === 'fut' && voice === 'act') return s.supS ? nominalForm({ decl: 'adj12', stem: s.supS + 'ūr' }, 'nom', 'sg', 'm') : null;
     return null;
   }
 
