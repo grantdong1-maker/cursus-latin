@@ -118,10 +118,15 @@
   /* ---------- helpers ---------- */
 
   function verbStems(w) {
+    if (w.dep) { /* hortor/sequor/patior shape: p[3] unused, 'perfect' is PPP + sum */
+      var dpres = w.p[0].replace(/(or|ur)$/, '');
+      if (w.conj === 33 || w.conj === 4) dpres = dpres.replace(/[i]$/, ''); /* patior → pat- */
+      return { pres: dpres, perfS: null, supS: w.p[2].replace(/us sum$/, '') };
+    }
     var pres = w.p[0].replace(/[ō]$/, '');
     if (w.conj === 2) pres = pres.replace(/[e]$/, '');
     if (w.conj === 33 || w.conj === 4) pres = pres.replace(/[i]$/, ''); /* capiō, audiō keep theme i in endings */
-    var perfS = w.p[2].replace(/[ī]$/, '');
+    var perfS = (w.p[2] && w.p[2] !== '\u2014') ? w.p[2].replace(/[ī]$/, '') : null;
     var supS = (w.p[3] && w.p[3] !== '\u2014') ? w.p[3].replace(/um$/, '') : null;
     return { pres: pres, perfS: perfS, supS: supS };
   }
@@ -171,11 +176,13 @@
       return tbl ? tbl[i] : null;
     }
     if (w.conj === 0) return null;
+    if (w.dep && voice === 'act') voice = 'pass'; /* deponent: active meaning, passive forms */
     var s = verbStems(w), T = V[w.conj];
     if (voice === 'act') {
       if (tense === 'pres') return s.pres + T.pres[i];
       if (tense === 'imp') return s.pres + T.imp[i];
       if (tense === 'fut') return s.pres + T.fut[i];
+      if (!s.perfS) return null; /* e.g. feriō with no recorded perfect */
       if (tense === 'perf') return s.perfS + PERF[i];
       if (tense === 'plup') return s.perfS + PLUP[i];
       if (tense === 'fp') return s.perfS + FPS[i];
@@ -197,6 +204,10 @@
   function imperativeForm(w, num) {
     if (!V[w.conj]) return null;
     var s = verbStems(w);
+    if (w.dep) {
+      if (num === 'sg') return presInfAct(w); /* hortāre / sequere / patere — same shape as the present infinitive */
+      return s.pres + (w.conj === 1 ? '\u0101min\u012b' : 'imin\u012b'); /* hortāminī, sequiminī */
+    }
     return s.pres + IMPERAT[w.conj][num === 'sg' ? 0 : 1];
   }
 
@@ -213,6 +224,13 @@
 
   function infinitiveForm(w, tense, voice) {
     if (w.irr || !V[w.conj]) return null;
+    if (w.dep && voice === 'act') {
+      if (tense === 'pres') voice = 'pass'; /* hortārī */
+      if (tense === 'perf') { /* hortātus esse */
+        var ds = verbStems(w);
+        return ds.supS ? nominalForm({ decl: 'adj12', stem: ds.supS }, 'nom', 'sg', 'm') + ' esse' : null;
+      }
+    }
     var s = verbStems(w);
     if (tense === 'pres' && voice === 'act') return presInfAct(w);
     if (tense === 'pres' && voice === 'pass') {
@@ -227,12 +245,13 @@
 
   function subjunctiveForm(w, tense, voice, person, num) {
     if (w.irr || !V[w.conj]) return null;
+    if (w.dep && voice === 'act') voice = 'pass'; /* deponent: active meaning, passive forms */
     var i = (person - 1) + (num === 'pl' ? 3 : 0);
     var s = verbStems(w);
     if (tense === 'pres') return s.pres + (voice === 'act' ? SUBJ_PRES[w.conj][i] : SUBJ_PRES_P[w.conj][i]);
     var infS = presInfAct(w).slice(0, -1); /* amāre → amār- */
     if (tense === 'imp') return infS + (voice === 'act' ? SUBJ_IMPF_A[i] : SUBJ_IMPF_P[i]);
-    if ((tense === 'perf' || tense === 'plup') && !s.perfS) return null;   /* no perfect stem, no perfect subjunctive */
+    if ((tense === 'perf' || tense === 'plup') && !s.perfS && !s.supS) return null;   /* no perfect stem, no perfect subjunctive */
     if (tense === 'perf' && voice === 'act') return s.perfS + SUBJ_PERF[i];
     if (tense === 'plup' && voice === 'act') return s.perfS + SUBJ_PLUP[i];
     if ((tense === 'perf' || tense === 'plup') && voice === 'pass') {
@@ -247,7 +266,7 @@
     if (w.irr || !V[w.conj]) return null;
     var s = verbStems(w);
     if (tense === 'pres' && voice === 'act') {
-      var st = s.pres + (w.conj === 1 ? 'ānt' : (w.conj === 33 || w.conj === 4) ? 'iēnt' : 'ēnt');
+      var st = s.pres + (w.conj === 1 ? 'ānt' : (w.conj === 33 || w.conj === 4) ? (w.dep ? 'ient' : 'iēnt') : 'ēnt');
       return st.slice(0, -1) + 's'; /* amānt → amāns */
     }
     if (tense === 'perf' && voice === 'pass') return s.supS ? nominalForm({ decl: 'adj12', stem: s.supS }, 'nom', 'sg', 'm') : null;
@@ -263,6 +282,7 @@
       if (!form || form === '—') return;
       out.push({ form: form, kind: kind, meta: meta });
     }
+    if (w.type === 'v' && w.vocabOnly) return out; /* irregular verbs without a paradigm: flashcards only */
     if (w.type === 'n') {
       NUMS.forEach(function (num) {
         CASES.forEach(function (cs) { add(nominalForm(w, cs, num), 'noun', { cs: cs, num: num }); });
@@ -292,7 +312,7 @@
           NUMS.forEach(function (num) {
             TENSES.forEach(function (t) {
               ['act', 'pass'].forEach(function (vo) {
-                if (vo === 'pass' && (w.passOmit || [1, 2, 3, 33, 4].indexOf(w.conj) === -1)) return;
+                if (vo === 'pass' && (w.passOmit || w.dep || [1, 2, 3, 33, 4].indexOf(w.conj) === -1)) return;
                 var f = verbForm(w, pn, num, t, vo);
                 if (f) add(f, 'verb', { mood: 'ind', person: pn, num: num, tense: t, voice: vo });
               });
@@ -305,7 +325,7 @@
         ['pres', 'perf'].forEach(function (t) {
           ['act', 'pass'].forEach(function (vo) {
             if (vo === 'pass' && t === 'perf') return;
-            if (vo === 'pass' && (w.passOmit || [1, 2, 3, 33, 4].indexOf(w.conj) === -1)) return;
+            if (vo === 'pass' && (w.passOmit || w.dep || [1, 2, 3, 33, 4].indexOf(w.conj) === -1)) return;
             var f = infinitiveForm(w, t, vo);
             if (f) add(f, 'verb', { mood: 'inf', tense: t, voice: vo });
           });
@@ -315,7 +335,7 @@
           PERSONS.forEach(function (pn) {
             NUMS.forEach(function (num) {
               ['act', 'pass'].forEach(function (vo) {
-                if (vo === 'pass' && (w.passOmit || [1, 2, 3, 33, 4].indexOf(w.conj) === -1)) return;
+                if (vo === 'pass' && (w.passOmit || w.dep || [1, 2, 3, 33, 4].indexOf(w.conj) === -1)) return;
                 var f = subjunctiveForm(w, t, vo, pn, num);
                 if (f) add(f, 'verb', { mood: 'subj', person: pn, num: num, tense: t, voice: vo });
               });
@@ -403,6 +423,8 @@
     }
     if (w.type === 'v') {
       if (spec.imperative) return imperativeForm(w, spec.imperative);
+      if (spec.mood === 'inf') return infinitiveForm(w, spec.tense, spec.voice);
+      if (spec.mood === 'part') return participleForm(w, spec.tense, spec.voice);
       if (spec.mood === 'subj') {
         if (w.irr) {
           var st = w.irr['s' + spec.tense];

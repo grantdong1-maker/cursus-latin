@@ -356,7 +356,7 @@
           });
         }
       } else {
-        var voices = w.passOmit ? ['act'] : (state.chapter >= C.featureIntro.analyticPass ? ['act', 'pass'] : ['act']);
+        var voices = (w.passOmit || w.dep) ? ['act'] : (state.chapter >= C.featureIntro.analyticPass ? ['act', 'pass'] : ['act']);
         voices.forEach(function (vo) {
           TENSES.forEach(function (t) {
             if (!tenseOk(t)) return;
@@ -780,17 +780,18 @@
     if (!card) { host.appendChild(h('div', 'bigcard', 'All mastered for this chapter')); host.appendChild(h('p', 'muted', 'Raise your chapter level or reset progress to keep going.')); return; }
     var w = card.w;
     var face, answer;
+    var fullEntry = (w.type === 'v' && w.p && !w.irr) ? w.p.join(', ') : w.l;
     if (state.vocabMode === 'le') {
       face = esc(w.l.split(',')[0]);
       answer = esc(w.meaning) + (w.type === 'v' ? ' <span class="muted">(' + esc(w.l) + ')</span>' : '');
     } else {
       face = esc(w.meaning) + ' <span class="muted">(' + esc(w.l.split(',')[0]) + ')</span>';
-      answer = esc(w.l) + (w.type === 'v' ? ' <span class="muted">raw conj ' + w.conj + '</span>' : '');
+      answer = esc(fullEntry) + (w.type === 'v' ? ' <span class="muted">raw conj ' + w.conj + '</span>' : '');
     }
     var box = h('div', 'bigcard');
     box.appendChild(h('div', 'vocab-face', face));
     var inp = h('input', 'tin wide');
-    inp.placeholder = 'type the answer (Enter = check)';
+    inp.placeholder = state.vocabMode === 'el' ? 'type the full dictionary entry (Enter = check)' : 'type the answer (Enter = check)';
     inp.autocomplete = 'off';
     inp.spellcheck = false;
     box.appendChild(inp);
@@ -823,12 +824,14 @@
     chk.onclick = function () {
       var st = vsState(w);
       st.seen++;
-      var ok = state.vocabMode === 'le'
-        ? glossOk(inp.value)
-        : String(w.l).split(/[,\/]/).some(function (seg) {
-            var nn = normalizeSans(seg.trim());
-            return nn && normalizeSans(inp.value).indexOf(nn) === 0;
-          });
+      var ok;
+      if (state.vocabMode === 'le') {
+        ok = glossOk(inp.value);
+      } else {
+        /* English→Latin: the whole dictionary entry must be typed — nom, gen, gender;
+           verbs: all four principal parts. Macron- and punctuation-blind. */
+        ok = normalizeSans(inp.value) === normalizeSans(fullEntry);
+      }
       st.right += ok ? 1 : 0;
       var now = Date.now();
       var intervals = [0, 1000 * 3600 * 12, 1000 * 3600 * 24 * 3, 1000 * 3600 * 24 * 7, 1000 * 3600 * 24 * 16, 0];
@@ -943,11 +946,11 @@
       var vcell = h('div', 'gcell', '<b class="latin">' + esc(w.l) + '</b>');
       addLabel(vcell, 'indicative active');
       vcell.appendChild(vtable(w, V_HEADS, 'act'));
-      if (canPass && !w.passOmit) { addLabel(vcell, 'indicative passive'); vcell.appendChild(vtable(w, V_HEADS, 'pass')); }
+      if (canPass && !w.passOmit && !w.dep) { addLabel(vcell, 'indicative passive'); vcell.appendChild(vtable(w, V_HEADS, 'pass')); }
       if (canSubj) {
         addLabel(vcell, 'subjunctive active');
         vcell.appendChild(vtable(w, S_HEADS, 'act', 'subj'));
-        if (!w.passOmit) { addLabel(vcell, 'subjunctive passive'); vcell.appendChild(vtable(w, S_HEADS, 'pass', 'subj')); }
+        if (!w.passOmit && !w.dep) { addLabel(vcell, 'subjunctive passive'); vcell.appendChild(vtable(w, S_HEADS, 'pass', 'subj')); }
       }
       var impSg = G.formOf(w, { imperative: 'sg' }), impPl = G.formOf(w, { imperative: 'pl' });
       if (impSg) {
